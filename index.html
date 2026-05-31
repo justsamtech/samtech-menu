@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>قائمة الطعام</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #1565C0;
+      --primary-c: #D6EAFF;
+      --secondary: #0097A7;
+      --bg:        #F7F9FC;
+      --surface:   #FFFFFF;
+      --border:    #DDE3EA;
+      --text:      #1A1A2E;
+      --text-sec:  #5A6678;
+      --error:     #D32F2F;
+      --radius:    16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      padding: 32px 20px 24px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(21,101,192,.25);
+    }
+    header h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.3px; }
+    header p  { margin-top: 4px; font-size: .85rem; opacity: .85; }
+
+    /* ── Search ─────────────────────────────────────── */
+    .search-wrap {
+      padding: 14px 16px 0;
+      position: sticky;
+      top: 100px;
+      z-index: 90;
+      background: var(--bg);
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      font-size: .95rem;
+      background: var(--surface);
+      outline: none;
+      transition: border-color .2s;
+      text-align: right;
+    }
+    .search-wrap input:focus { border-color: var(--primary); }
+
+    /* ── Category chips ─────────────────────────────── */
+    .cats {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px 16px 4px;
+      scrollbar-width: none;
+    }
+    .cats::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      flex-shrink: 0;
+      padding: 6px 16px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      white-space: nowrap;
+      color: var(--text-sec);
+    }
+    .cat-chip.active {
+      background: var(--primary-c);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* ── Grid ───────────────────────────────────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px 16px 80px;
+    }
+    @media (min-width: 600px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: repeat(4, 1fr); max-width: 1100px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+    }
+
+    /* ── Item card ──────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow .2s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.09); }
+
+    .card-img {
+      aspect-ratio: 1 / 1;
+      position: relative;
+      overflow: hidden;
+      background: #EEF2F7;
+    }
+    .card-img img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .card-img .placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, #EEF2F7, #DDE5EE);
+    }
+    .badge-unavail {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .badge-unavail span {
+      background: var(--error);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+
+    .card-body {
+      padding: 10px 10px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .item-name {
+      font-size: .9rem;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--text);
+    }
+    .price-badge {
+      display: inline-block;
+      background: var(--primary-c);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: .85rem;
+      font-weight: 800;
+      align-self: flex-start;
+    }
+
+    /* ── States ─────────────────────────────────────── */
+    .state-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+      text-align: center;
+    }
+    .state-box .icon { font-size: 3.5rem; }
+    .state-box p { color: var(--text-sec); font-size: .95rem; max-width: 280px; line-height: 1.6; }
+    .retry-btn {
+      padding: 10px 28px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── Spinner ─────────────────────────────────────── */
+    .spinner {
+      width: 42px; height: 42px;
+      border: 4px solid var(--primary-c);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Updated time ────────────────────────────────── */
+    .updated-bar {
+      text-align: center;
+      padding: 8px;
+      font-size: .75rem;
+      color: var(--text-sec);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1 id="rest-name">قائمة الطعام</h1>
+  <p id="rest-subtitle">🍽️ اختر ما تشتهي</p>
+</header>
+
+<div class="search-wrap">
+  <input type="search" id="search-input" placeholder="🔍  ابحث عن صنف..." oninput="filterItems()" />
+</div>
+
+<div class="cats" id="cats-bar"></div>
+<div id="main-content"></div>
+
+<script type="module">
+  import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const app = initializeApp({
+    apiKey:    'AIzaSyADY6yLFp76Gwa4KQ9_bZG0KGJ3fybYZwU',
+    projectId: 'drsamj',
+  });
+  const db = getFirestore(app);
+
+  // ── جلب البيانات ────────────────────────────────────
+  window._allItems = [];
+  window._activeCat = null;
+
+  async function loadMenu() {
+    showLoading();
+    try {
+      const snap = await getDoc(doc(db, 'restaurant', 'menu'));
+      if (!snap.exists()) {
+        showError('لم يتم نشر القائمة بعد.\nتواصل مع المطعم.');
+        return;
+      }
+      const data = snap.data();
+
+      // اسم المطعم
+      const name = data.restaurantName || 'قائمة الطعام';
+      document.getElementById('rest-name').textContent = name;
+      document.title = name;
+
+      // وقت آخر تحديث
+      if (data.publishedAt) {
+        const d = data.publishedAt.toDate();
+        document.getElementById('rest-subtitle').textContent =
+          '🍽️ آخر تحديث: ' + d.toLocaleDateString('ar-SA');
+      }
+
+      window._allItems = data.items || [];
+      buildCategories();
+      renderItems(window._allItems);
+    } catch (e) {
+      showError('تعذّر تحميل القائمة.\nتحقق من اتصالك بالإنترنت.');
+      console.error(e);
+    }
+  }
+
+  // ── بناء شرائح الفئات ─────────────────────────────
+  function buildCategories() {
+    const cats = new Set();
+    window._allItems.forEach(i => { if (i.ctgSer != null) cats.add(i.ctgSer); });
+    if (cats.size < 2) return; // لا فائدة من الشرائح إذا فئة واحدة
+
+    const bar = document.getElementById('cats-bar');
+    bar.innerHTML = '';
+
+    // "الكل"
+    const all = chip('الكل', true);
+    all.onclick = () => { setActiveCat(null, bar); };
+    bar.appendChild(all);
+
+    cats.forEach(c => {
+      const ch = chip('فئة ' + c, false);
+      ch.dataset.cat = c;
+      ch.onclick = () => setActiveCat(c, bar);
+      bar.appendChild(ch);
+    });
+  }
+
+  function chip(label, active) {
+    const el = document.createElement('div');
+    el.className = 'cat-chip' + (active ? ' active' : '');
+    el.textContent = label;
+    return el;
+  }
+
+  function setActiveCat(cat, bar) {
+    window._activeCat = cat;
+    bar.querySelectorAll('.cat-chip').forEach(ch => {
+      const isCat = cat == null
+        ? ch.dataset.cat == null
+        : ch.dataset.cat == cat;
+      ch.classList.toggle('active', !ch.dataset.cat ? cat == null : ch.dataset.cat == cat);
+    });
+    filterItems();
+  }
+
+  // ── تصفية + بحث ───────────────────────────────────
+  window.filterItems = function () {
+    const q = (document.getElementById('search-input').value || '').trim().toLowerCase();
+    const cat = window._activeCat;
+    const filtered = window._allItems.filter(item => {
+      const matchCat = cat == null || item.ctgSer == cat;
+      const matchQ   = !q || item.name.toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+    renderItems(filtered);
+  };
+
+  // ── رسم الأصناف ────────────────────────────────────
+  function renderItems(items) {
+    const box = document.getElementById('main-content');
+    if (items.length === 0) {
+      box.innerHTML = `
+        <div class="state-box">
+          <div class="icon">🔍</div>
+          <p>لا توجد أصناف تطابق بحثك</p>
+        </div>`;
+      return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    items.forEach(item => grid.appendChild(itemCard(item)));
+    box.innerHTML = '';
+    box.appendChild(grid);
+  }
+
+  function itemCard(item) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    // صورة
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'card-img';
+
+    if (item.imagePath) {
+      const img = document.createElement('img');
+      img.src = item.imagePath;
+      img.alt = item.name;
+      img.onerror = () => { imgWrap.innerHTML = '<div class="placeholder">🍽️</div>'; };
+      imgWrap.appendChild(img);
+    } else {
+      imgWrap.innerHTML = '<div class="placeholder">🍽️</div>';
+    }
+
+    if (!item.isAvailable) {
+      const badge = document.createElement('div');
+      badge.className = 'badge-unavail';
+      badge.innerHTML = '<span>غير متاح</span>';
+      imgWrap.appendChild(badge);
+    }
+
+    // بيانات
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const name = document.createElement('div');
+    name.className = 'item-name';
+    name.textContent = item.name;
+    body.appendChild(name);
+
+    if (item.price > 0) {
+      const price = document.createElement('div');
+      price.className = 'price-badge';
+      const val = item.price % 1 === 0
+        ? item.price.toFixed(0)
+        : item.price.toFixed(2);
+      price.textContent = '$ ' + val;
+      body.appendChild(price);
+    }
+
+    card.appendChild(imgWrap);
+    card.appendChild(body);
+    return card;
+  }
+
+  // ── حالات التحميل والخطأ ────────────────────────────
+  function showLoading() {
+    document.getElementById('main-content').innerHTML = `
+      <div class="state-box"><div class="spinner"></div><p>جاري تحميل القائمة...</p></div>`;
+  }
+
+  function showError(msg) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="state-box">
+        <div class="icon">📡</div>
+        <p>${msg.replace(/\n/g,'<br>')}</p>
+        <button class="retry-btn" onclick="location.reload()">إعادة المحاولة</button>
+      </div>`;
+  }
+
+  loadMenu();
+</script>
+</body>
+</html>
