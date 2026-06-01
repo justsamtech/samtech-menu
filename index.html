@@ -264,11 +264,14 @@
       document.getElementById('rest-name').textContent = name;
       document.title = name;
 
-      // وقت آخر تحديث
+      // وقت آخر تحديث — تنسيق ميلادي صريح
       if (data.publishedAt) {
-        const d = data.publishedAt.toDate();
+        const d   = data.publishedAt.toDate();
+        const day = String(d.getDate()).padStart(2,'0');
+        const mon = String(d.getMonth()+1).padStart(2,'0');
+        const yr  = d.getFullYear();
         document.getElementById('rest-subtitle').textContent =
-          '🍽️ آخر تحديث: ' + d.toLocaleDateString('ar-SA');
+          'آخر تحديث: ' + day + '/' + mon + '/' + yr;
       }
 
       window._allItems = data.items || [];
