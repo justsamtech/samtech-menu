@@ -235,16 +235,26 @@
   });
   const db = getFirestore(app);
 
+  // ── قراءة كود المطعم من URL (?r=CODE) ───────────────
+  const _restaurantCode = new URLSearchParams(window.location.search).get('r') || '';
+
   // ── جلب البيانات ────────────────────────────────────
   window._allItems = [];
   window._activeCat = null;
 
   async function loadMenu() {
     showLoading();
+
+    // تحقق من وجود الكود
+    if (!_restaurantCode) {
+      showError('رمز QR غير صحيح.\nتأكد من مسح الرمز الصحيح الموجود على الطاولة.');
+      return;
+    }
+
     try {
-      const snap = await getDoc(doc(db, 'restaurant', 'menu'));
+      const snap = await getDoc(doc(db, 'restaurants', _restaurantCode));
       if (!snap.exists()) {
-        showError('لم يتم نشر القائمة بعد.\nتواصل مع المطعم.');
+        showError('لم يتم نشر قائمة هذا المطعم بعد.\nتواصل مع الإدارة.');
         return;
       }
       const data = snap.data();
