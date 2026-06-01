@@ -275,6 +275,11 @@
       }
 
       window._allItems = data.items || [];
+      // خريطة أسماء الفئات {ser: name}
+      window._catNames = {};
+      (data.categories || []).forEach(c => {
+        if (c && c.ser != null) window._catNames[c.ser] = c.name || ('فئة ' + c.ser);
+      });
       buildCategories();
       renderItems(window._allItems);
     } catch (e) {
@@ -298,7 +303,8 @@
     bar.appendChild(all);
 
     cats.forEach(c => {
-      const ch = chip('فئة ' + c, false);
+      const label = (window._catNames && window._catNames[c]) ? window._catNames[c] : ('فئة ' + c);
+      const ch = chip(label, false);
       ch.dataset.cat = c;
       ch.onclick = () => setActiveCat(c, bar);
       bar.appendChild(ch);
